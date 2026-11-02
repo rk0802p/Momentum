@@ -13,6 +13,7 @@
     "@momentum/shared-types": "workspace:*",
     "@momentum/temporal-engine": "workspace:*",
     "@momentum/validation": "workspace:*",
+    "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

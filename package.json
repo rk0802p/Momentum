@@ -14,7 +14,11 @@
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
+    "prisma": "^6.19.3",
     "typescript": "^5.7.3",
     "vitest": "^3.0.7"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3"
   }
 }

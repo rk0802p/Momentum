@@ -8,6 +8,7 @@ describe('MOMENTUM Backend API & Auth Acceptance Tests', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe('healthy');
     expect(res.body.data.service).toBe('momentum-api');
+    expect(res.body.data.database).toBeDefined();
     expect(res.headers['x-request-id']).toBeDefined();
   });
 

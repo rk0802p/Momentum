@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { randomUUID } from 'crypto';
 import { env } from './config/env';
+import { verifyDatabaseConnection } from './config/database';
 import { errorHandler } from './middleware/errorHandler';
 import { authenticate } from './middleware/authenticate';
 import { authRouter } from './routes/auth';
@@ -27,11 +28,13 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Health check endpoint
-app.get('/api/v1/health', (_req: Request, res: Response) => {
+app.get('/api/v1/health', async (_req: Request, res: Response) => {
+  const dbConnected = await verifyDatabaseConnection();
   res.json({
     data: {
       status: 'healthy',
       service: 'momentum-api',
+      database: dbConnected ? 'connected' : 'in-memory-fallback',
       uptime: process.uptime(),
       timestamp: new Date().toISOString()
     },
