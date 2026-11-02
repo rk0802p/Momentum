@@ -1,0 +1,20 @@
+{
+  "name": "momentum-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MOMENTUM — Spatial Calendar & Personal Time Visualization System",
+  "packageManager": "pnpm@10.34.8",
+  "scripts": {
+    "dev": "pnpm --filter @momentum/web dev",
+    "dev:all": "pnpm --parallel dev",
+    "dev:api": "pnpm --filter @momentum/api dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "test:temporal": "pnpm --filter @momentum/temporal-engine test",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.7"
+  }
+}

@@ -1,0 +1,232 @@
+// MOMENTUM PostgreSQL Database Schema
+// Section 6 of Product & Technical Specification
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  timezone     String   @default("UTC")
+  preferences  Json     // weekStartsOn, defaultEnvironment, snapInterval, reducedMotion, etc.
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  events       CalendarEvent[]
+  categories   Category[]
+  sessions     ActivitySession[]
+  revisions    EventRevision[]
+  scenarios    Scenario[]
+  goals        Goal[]
+  snapshots    DailySnapshot[]
+
+  @@map("users")
+}
+
+model Category {
+  id         String   @id @default(uuid())
+  userId     String
+  name       String
+  color      String   // Hex code e.g. #D6A66D
+  traceStyle String   @default("solid") // solid, particles, nodes, flow
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events     CalendarEvent[]
+
+  @@index([userId, sortOrder])
+  @@map("categories")
+}
+
+model CalendarEvent {
+  id            String   @id @default(uuid())
+  userId        String
+  title         String
+  description   String?
+  categoryId    String
+  startAt       DateTime
+  endAt         DateTime
+  timezone      String   @default("UTC")
+  allDay        Boolean  @default(false)
+  status        String   @default("planned") // planned, in_progress, completed, cancelled, missed
+  recurrenceId  String?
+  parentEventId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category      Category @relation(fields: [categoryId], references: [id])
+  sessions      ActivitySession[]
+  revisions     EventRevision[]
+
+  @@index([userId, startAt, endAt])
+  @@index([categoryId])
+  @@map("events")
+}
+
+model ActivitySession {
+  id        String   @id @default(uuid())
+  eventId   String
+  userId    String
+  status    String   @default("active") // active, paused, completed, abandoned
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  createdAt DateTime @default(now())
+
+  event     CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  segments  ActivitySegment[]
+
+  @@index([eventId, startedAt])
+  @@index([userId])
+  @@map("activity_sessions")
+}
+
+model ActivitySegment {
+  id              String   @id @default(uuid())
+  sessionId       String
+  startedAt       DateTime @default(now())
+  endedAt         DateTime?
+  durationSeconds Int?
+
+  session         ActivitySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("activity_segments")
+}
+
+model EventRevision {
+  id             String   @id @default(uuid())
+  eventId        String
+  userId         String
+  revisionNumber Int
+  action         String   // created, updated, rescheduled, resized, completed, cancelled, deleted
+  previousState  Json?
+  newState       Json
+  recordedAt     DateTime @default(now())
+
+  event          CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, revisionNumber])
+  @@index([userId, recordedAt])
+  @@map("event_revisions")
+}
+
+model RecurrenceRule {
+  id              String   @id @default(uuid())
+  eventId         String   @unique
+  rrule           String
+  localStartTime  String
+  timezone        String
+  durationMinutes Int
+  until           DateTime?
+  occurrenceLimit Int?
+  createdAt       DateTime @default(now())
+
+  exceptions      EventException[]
+
+  @@map("recurrence_rules")
+}
+
+model EventException {
+  id                  String   @id @default(uuid())
+  recurrenceId        String
+  originalOccurrenceAt DateTime
+  action              String   // cancelled, modified
+  modifiedEventId     String?
+
+  rule                RecurrenceRule @relation(fields: [recurrenceId], references: [id], onDelete: Cascade)
+
+  @@index([recurrenceId, originalOccurrenceAt])
+  @@map("event_exceptions")
+}
+
+model Scenario {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  baseStartAt DateTime
+  baseEndAt   DateTime
+  status      String   @default("draft") // draft, applied, archived
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events      ScenarioEvent[]
+
+  @@index([userId, createdAt])
+  @@map("scenarios")
+}
+
+model ScenarioEvent {
+  id          String   @id @default(uuid())
+  scenarioId  String
+  baseEventId String?
+  title       String
+  startAt     DateTime
+  endAt       DateTime
+  action      String   // override, add, remove
+
+  scenario    Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@index([scenarioId])
+  @@map("scenario_events")
+}
+
+model Goal {
+  id            String   @id @default(uuid())
+  userId        String
+  title         String
+  description   String?
+  targetStartAt DateTime?
+  targetEndAt   DateTime?
+  status        String   @default("active") // active, completed, archived
+  createdAt     DateTime @default(now())
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  milestones    Milestone[]
+
+  @@index([userId, status])
+  @@map("goals")
+}
+
+model Milestone {
+  id          String    @id @default(uuid())
+  goalId      String
+  title       String
+  dueAt       DateTime?
+  completedAt DateTime?
+  sortOrder   Int       @default(0)
+
+  goal        Goal      @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId, sortOrder])
+  @@map("milestones")
+}
+
+model DailySnapshot {
+  id             String   @id @default(uuid())
+  userId         String
+  localDate      String   // YYYY-MM-DD
+  timezone       String
+  revisionCursor Int      @default(0)
+  eventState     Json
+  createdAt      DateTime @default(now())
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, localDate])
+  @@map("daily_snapshots")
+}
