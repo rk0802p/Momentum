@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigationStore } from '../../stores/navigationStore';
 import { useEventStore } from '../../stores/eventStore';
+import type { ActivitySegment, ActivitySession } from '@momentum/shared-types';
 import {
   Play,
   Pause,
@@ -9,28 +10,29 @@ import {
   Clock,
   ArrowLeft,
   Sparkles,
-  Flame
+  Flame,
+  Tag
 } from 'lucide-react';
 
 export const FocusEnvironment: React.FC = () => {
-  const { selectedEventId, setEnvironment } = useNavigationStore();
-  const { events, updateEvent } = useEventStore();
+  const { selectedEventId, setEnvironment, activeDate } = useNavigationStore();
+  const { events, updateEvent, recordActivitySession, categories } = useEventStore();
 
   const selectedEvent = events.find(e => e.id === selectedEventId && !e.deletedAt) || events[0];
+  const category = categories.find(c => c.id === selectedEvent?.categoryId);
 
   // Timestamp-based elapsed calculation (avoids tab suspension drift!)
   const [isRunning, setIsRunning] = useState(false);
   const [accumulatedSeconds, setAccumulatedSeconds] = useState(0);
+  const [segments, setSegments] = useState<ActivitySegment[]>([]);
   const startTimeRef = useRef<number | null>(null);
+  const sessionStartTimeRef = useRef<string>(new Date().toISOString());
 
   useEffect(() => {
     let animId: number;
-
     const tick = () => {
       if (isRunning && startTimeRef.current !== null) {
-        const now = Date.now();
-        const deltaSec = Math.floor((now - startTimeRef.current) / 1000);
-        setAccumulatedSeconds(prev => prev); // trigger render
+        setAccumulatedSeconds(prev => prev); // triggers continuous render
       }
       animId = requestAnimationFrame(tick);
     };
@@ -38,19 +40,33 @@ export const FocusEnvironment: React.FC = () => {
     if (isRunning) {
       animId = requestAnimationFrame(tick);
     }
-
     return () => cancelAnimationFrame(animId);
   }, [isRunning]);
 
   const handleStart = () => {
-    startTimeRef.current = Date.now();
+    const now = Date.now();
+    startTimeRef.current = now;
     setIsRunning(true);
   };
 
   const handlePause = () => {
     if (startTimeRef.current !== null) {
-      const segmentElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      const now = Date.now();
+      const segmentElapsed = Math.floor((now - startTimeRef.current) / 1000);
       setAccumulatedSeconds(prev => prev + segmentElapsed);
+
+      // Record interval segment
+      setSegments(prev => [
+        ...prev,
+        {
+          id: `seg-${Date.now()}`,
+          sessionId: `sess-${selectedEvent?.id || 'demo'}`,
+          startedAt: new Date(startTimeRef.current!).toISOString(),
+          endedAt: new Date(now).toISOString(),
+          durationSeconds: segmentElapsed
+        }
+      ]);
+
       startTimeRef.current = null;
     }
     setIsRunning(false);
@@ -58,10 +74,34 @@ export const FocusEnvironment: React.FC = () => {
 
   const handleComplete = () => {
     handlePause();
+
     if (selectedEvent) {
+      // Record actual session
+      const nowIso = new Date().toISOString();
+      const finalSession: ActivitySession = {
+        id: `sess-${Date.now()}`,
+        eventId: selectedEvent.id,
+        userId: 'default-user',
+        status: 'completed',
+        startedAt: sessionStartTimeRef.current,
+        endedAt: nowIso,
+        segments: segments.length > 0 ? segments : [
+          {
+            id: `seg-${Date.now()}`,
+            sessionId: `sess-${Date.now()}`,
+            startedAt: sessionStartTimeRef.current,
+            endedAt: nowIso,
+            durationSeconds: Math.max(1, accumulatedSeconds)
+          }
+        ],
+        createdAt: sessionStartTimeRef.current
+      };
+
+      recordActivitySession(finalSession);
       updateEvent(selectedEvent.id, { status: 'completed' });
     }
-    setEnvironment('now');
+
+    setEnvironment('memory');
   };
 
   // Current display seconds
@@ -83,15 +123,23 @@ export const FocusEnvironment: React.FC = () => {
 
         <div className="flex items-center gap-2 text-xs font-mono text-accent">
           <Flame size={14} />
-          <span>ACTIVE TEMPORAL EXECUTION</span>
+          <span>ACTIVE TEMPORAL EXECUTION · ZERO TAB-SUSPENSION DRIFT</span>
         </div>
       </div>
 
       {/* Main Focus Dial & Timer */}
       <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8">
         <div className="space-y-2 max-w-xl">
-          <span className="text-[11px] font-mono uppercase tracking-widest text-text-muted px-2.5 py-1 rounded bg-surface border border-border">
-            Current Objective
+          <span
+            className="text-[11px] font-mono uppercase tracking-widest px-2.5 py-1 rounded border inline-flex items-center gap-1.5"
+            style={{
+              backgroundColor: `${category?.color || '#D6A66D'}20`,
+              borderColor: `${category?.color || '#D6A66D'}40`,
+              color: category?.color || '#D6A66D'
+            }}
+          >
+            <Tag size={11} />
+            <span>{category?.name || 'Objective'}</span>
           </span>
           <h1 className="text-3xl font-bold text-text-primary tracking-tight mt-2">
             {selectedEvent ? selectedEvent.title : 'Deep Focus Block'}
@@ -105,7 +153,11 @@ export const FocusEnvironment: React.FC = () => {
 
         {/* Big Monospace Stopwatch Display */}
         <div className="relative w-80 h-80 rounded-full border border-border bg-[#121419]/90 flex flex-col items-center justify-center shadow-glow-accent">
-          <div className="absolute inset-2 rounded-full border border-dashed border-accent/30 animate-pulse" />
+          <div
+            className={`absolute inset-2 rounded-full border border-dashed transition-all ${
+              isRunning ? 'border-accent/40 animate-pulse' : 'border-border/40'
+            }`}
+          />
           <div className="text-6xl font-bold font-mono text-text-primary tracking-tighter">
             {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
           </div>
@@ -122,7 +174,7 @@ export const FocusEnvironment: React.FC = () => {
               className="px-6 py-3 rounded-xl bg-accent text-black font-semibold text-sm flex items-center gap-2 hover:bg-[#e4b57e] transition-colors shadow-glow"
             >
               <Play size={16} fill="currentColor" />
-              <span>Start Session</span>
+              <span>{accumulatedSeconds > 0 ? 'Resume Session' : 'Start Session'}</span>
             </button>
           ) : (
             <button
@@ -130,7 +182,7 @@ export const FocusEnvironment: React.FC = () => {
               className="px-6 py-3 rounded-xl bg-surface-raised border border-border text-text-primary font-semibold text-sm flex items-center gap-2 hover:bg-surface transition-colors"
             >
               <Pause size={16} fill="currentColor" />
-              <span>Pause</span>
+              <span>Pause Interval</span>
             </button>
           )}
 
@@ -139,7 +191,7 @@ export const FocusEnvironment: React.FC = () => {
             className="px-6 py-3 rounded-xl bg-completed text-black font-semibold text-sm flex items-center gap-2 hover:bg-[#86b59f] transition-colors shadow-glow-completed"
           >
             <CheckCircle2 size={16} />
-            <span>Complete Activity</span>
+            <span>Complete & Log to MEMORY</span>
           </button>
         </div>
       </div>
