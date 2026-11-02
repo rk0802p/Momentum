@@ -1,32 +1,110 @@
 import React, { useState } from 'react';
-import { Orbit, GitBranch, Layers, CheckCircle, Sparkles, Plus, AlertCircle } from 'lucide-react';
+import { useNavigationStore } from '../../stores/navigationStore';
+import { useEventStore } from '../../stores/eventStore';
+import { Orbit, GitBranch, CheckCircle2, Plus, ArrowRight, AlertTriangle, Sparkles } from 'lucide-react';
+
+interface ScenarioDefinition {
+  id: string;
+  name: string;
+  description: string;
+  hoursCommitted: number;
+  status: 'baseline' | 'draft' | 'ready';
+  eventsToApply: {
+    title: string;
+    startAt: string;
+    endAt: string;
+    categoryId: string;
+  }[];
+}
 
 export const OrbitEnvironment: React.FC = () => {
-  const [activeScenario, setActiveScenario] = useState<'baseline' | 'scenario-a' | 'scenario-b'>('baseline');
+  const { activeDate, setEnvironment } = useNavigationStore();
+  const { addEvent } = useEventStore();
 
-  const scenarios = [
+  const [activeScenarioId, setActiveScenarioId] = useState<string>('scenario-a');
+  const [appliedMessage, setAppliedMessage] = useState<string | null>(null);
+
+  const scenarios: ScenarioDefinition[] = [
     {
       id: 'baseline',
-      name: 'Baseline Schedule',
-      desc: 'Active production commitments and scheduled routines.',
-      hours: '32.5 hrs committed',
-      status: 'Active'
+      name: 'Baseline Reality',
+      description: 'Your existing commitments as scheduled in NOW and recorded in historical memory.',
+      hoursCommitted: 6.5,
+      status: 'baseline',
+      eventsToApply: []
     },
     {
       id: 'scenario-a',
-      name: 'Scenario Alpha: 80% Deep Focus',
-      desc: 'Replaces recurring sync meetings with consolidated 4-hour morning focus blocks.',
-      hours: '36.0 hrs committed',
-      status: 'Simulation'
+      name: 'Scenario Alpha: 4-Hour Deep Work Blocks',
+      description: 'Consolidates scattered meetings into afternoon sprint and opens a dedicated morning Deep Work block.',
+      hoursCommitted: 8.0,
+      status: 'ready',
+      eventsToApply: [
+        {
+          title: 'Quantum Spatial Geometry (Deep Block)',
+          startAt: `${activeDate}T08:00:00+05:30`,
+          endAt: `${activeDate}T12:00:00+05:30`,
+          categoryId: 'cat-work'
+        },
+        {
+          title: 'Focused Review & Synthesis',
+          startAt: `${activeDate}T14:00:00+05:30`,
+          endAt: `${activeDate}T16:00:00+05:30`,
+          categoryId: 'cat-learning'
+        }
+      ]
     },
     {
       id: 'scenario-b',
-      name: 'Scenario Beta: Creative Sprint',
-      desc: 'Dedicates Wednesday and Friday exclusively to graphics shader research.',
-      hours: '28.0 hrs committed',
-      status: 'Simulation'
+      name: 'Scenario Beta: Creative Sound & Shaders',
+      description: 'Prioritizes modular synthesis and WebGL shader R&D with extended rest breaks.',
+      hoursCommitted: 5.5,
+      status: 'ready',
+      eventsToApply: [
+        {
+          title: 'Modular Analog Sound Design',
+          startAt: `${activeDate}T10:00:00+05:30`,
+          endAt: `${activeDate}T13:00:00+05:30`,
+          categoryId: 'cat-creative'
+        },
+        {
+          title: 'Raymarching Shader Experimentation',
+          startAt: `${activeDate}T15:00:00+05:30`,
+          endAt: `${activeDate}T17:30:00+05:30`,
+          categoryId: 'cat-creative'
+        }
+      ]
     }
   ];
+
+  const selectedScenario = scenarios.find(s => s.id === activeScenarioId) || scenarios[0];
+
+  const handleApplyScenario = () => {
+    if (selectedScenario.eventsToApply.length === 0) return;
+
+    // Apply new scenario commitments transactionally
+    selectedScenario.eventsToApply.forEach(ev => {
+      addEvent({
+        userId: 'default-user',
+        title: ev.title,
+        description: `Applied from ${selectedScenario.name}`,
+        categoryId: ev.categoryId,
+        startAt: ev.startAt,
+        endAt: ev.endAt,
+        timezone: 'Asia/Kolkata',
+        allDay: false,
+        status: 'planned',
+        recurrenceId: null,
+        parentEventId: null
+      });
+    });
+
+    setAppliedMessage(`Successfully applied "${selectedScenario.name}" to your schedule!`);
+    setTimeout(() => {
+      setAppliedMessage(null);
+      setEnvironment('now');
+    }, 1800);
+  };
 
   return (
     <div className="flex-1 w-full h-[calc(100vh-3.5rem)] flex flex-col justify-between spatial-grid-bg relative overflow-y-auto select-none p-6 space-y-6">
@@ -35,30 +113,32 @@ export const OrbitEnvironment: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-future text-xs font-mono font-semibold">
             <Orbit size={14} />
-            <span>ORBIT — FUTURE COMMITMENTS & SCENARIOS</span>
+            <span>ORBIT — FUTURE SCENARIOS & BRANCHING</span>
           </div>
           <h2 className="text-xl font-bold text-text-primary mt-1 tracking-tight">
-            Scenario Branching & Temporal Trajectories
+            Alternate Timeline Engine
           </h2>
           <p className="text-xs text-text-muted font-mono mt-0.5">
-            Branch, evaluate, and compare future schedule variations in total isolation
+            Model alternate futures without altering your baseline schedule until explicitly applied
           </p>
         </div>
 
-        <button className="px-3.5 py-1.5 rounded-lg bg-surface border border-border hover:border-accent text-xs font-mono text-text-primary hover:text-accent transition-colors flex items-center gap-1.5">
-          <Plus size={14} />
-          <span>Branch New Scenario</span>
-        </button>
+        {appliedMessage && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-completed/20 border border-completed/40 text-completed text-xs font-mono animate-in fade-in">
+            <CheckCircle2 size={14} />
+            <span>{appliedMessage}</span>
+          </div>
+        )}
       </div>
 
-      {/* Scenario Selector Cards */}
+      {/* Scenario Cards */}
       <div className="grid grid-cols-3 gap-5">
         {scenarios.map((sc) => {
-          const isSelected = activeScenario === sc.id;
+          const isSelected = activeScenarioId === sc.id;
           return (
             <div
               key={sc.id}
-              onClick={() => setActiveScenario(sc.id as any)}
+              onClick={() => setActiveScenarioId(sc.id)}
               className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
                 isSelected
                   ? 'bg-surface-raised border-accent shadow-glow'
@@ -67,48 +147,55 @@ export const OrbitEnvironment: React.FC = () => {
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surface border border-border text-text-muted">
+                  <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded border ${
+                    sc.status === 'baseline' ? 'bg-surface text-text-muted border-border' : 'bg-future/20 text-future border-future/30'
+                  }`}>
                     {sc.status}
                   </span>
                   {isSelected && (
-                    <span className="text-[10px] font-mono text-accent">Active Branch</span>
+                    <span className="text-[10px] font-mono text-accent">Focused Branch</span>
                   )}
                 </div>
                 <h3 className="text-sm font-semibold text-text-primary mt-3">
                   {sc.name}
                 </h3>
                 <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-                  {sc.desc}
+                  {sc.description}
                 </p>
               </div>
 
               <div className="mt-5 pt-3 border-t border-border/50 flex items-center justify-between text-xs font-mono">
-                <span className="text-text-muted">{sc.hours}</span>
-                <span className="text-accent hover:underline">Select Branch →</span>
+                <span className="text-text-muted">{sc.hoursCommitted}h committed</span>
+                <span className="text-accent hover:underline">Inspect →</span>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Orbital Preview Visual Area */}
-      <div className="bg-surface/50 border border-border rounded-2xl p-6 flex flex-col items-center justify-center min-h-[300px] text-center space-y-4">
-        <div className="relative w-48 h-48 flex items-center justify-center">
-          <div className="absolute inset-0 rounded-full border border-future/20 animate-spin" style={{ animationDuration: '30s' }} />
-          <div className="absolute inset-6 rounded-full border border-dashed border-accent/30 animate-spin" style={{ animationDuration: '20s', animationDirection: 'reverse' }} />
-          <div className="absolute inset-12 rounded-full border border-border" />
-          <div className="w-12 h-12 rounded-full bg-accent/20 border border-accent flex items-center justify-center shadow-glow">
-            <Orbit size={20} className="text-accent" />
-          </div>
-        </div>
-        <div>
-          <h4 className="text-sm font-semibold text-text-primary">
-            Orbital Trajectory Preview: {scenarios.find(s => s.id === activeScenario)?.name}
+      {/* Orbital Preview & Action Panel */}
+      <div className="bg-surface/60 border border-border rounded-2xl p-6 flex items-center justify-between">
+        <div className="space-y-1">
+          <div className="text-xs font-mono text-text-muted">ACTIVE SELECTION</div>
+          <h4 className="text-base font-semibold text-text-primary">
+            {selectedScenario.name}
           </h4>
-          <p className="text-xs text-text-muted font-mono max-w-md mx-auto mt-1">
-            Isolated future sandbox. Applying this scenario replaces baseline via atomic transactional migration.
+          <p className="text-xs text-text-secondary max-w-xl">
+            {selectedScenario.eventsToApply.length > 0
+              ? `Contains ${selectedScenario.eventsToApply.length} proposed commitments for ${activeDate}. Applying this scenario will commit these blocks to your calendar.`
+              : 'Current schedule baseline. Select Scenario Alpha or Beta to simulate alternate allocations.'}
           </p>
         </div>
+
+        {selectedScenario.status !== 'baseline' && (
+          <button
+            onClick={handleApplyScenario}
+            className="px-5 py-2.5 rounded-xl bg-accent text-black font-semibold text-xs flex items-center gap-2 hover:bg-[#e4b57e] transition-colors shadow-glow"
+          >
+            <span>Apply Scenario to Real Calendar</span>
+            <ArrowRight size={14} />
+          </button>
+        )}
       </div>
     </div>
   );

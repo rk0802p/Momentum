@@ -16,13 +16,17 @@
     "@momentum/spatial-engine": "workspace:*",
     "@momentum/temporal-engine": "workspace:*",
     "@momentum/validation": "workspace:*",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
     "@tanstack/react-query": "^5.66.0",
+    "@types/three": "^0.187.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.4.7",
     "lucide-react": "^0.475.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.0.1",
+    "three": "^0.187.0",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
