@@ -49,7 +49,7 @@ export interface CollisionGroup {
 
 export interface UserPreferences {
   weekStartsOn: 0 | 1;
-  defaultEnvironment: 'now' | 'flow' | 'memory';
+  defaultEnvironment: EnvironmentType;
   defaultCalendarMode: 'radial' | 'linear';
   snapInterval: SnapInterval;
   reducedMotion: boolean;
