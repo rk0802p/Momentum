@@ -65,6 +65,11 @@ export class MomentumApiClient {
     return this.request('/health');
   }
 
+  // Auth / User
+  async getCurrentUser(): Promise<User> {
+    return this.request('/auth/me');
+  }
+
   // Events
   async getEvents(from: string, to: string, timezone: string): Promise<CalendarEvent[]> {
     const params = new URLSearchParams({ from, to, timezone });

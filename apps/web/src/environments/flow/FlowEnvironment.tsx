@@ -76,7 +76,7 @@ export const FlowEnvironment: React.FC = () => {
             <span>Interaction: Click event to inspect · Double-click day slab to transition to NOW</span>
           </div>
           <div className="text-accent">
-            Deterministic 3D mapping: \(x = d \cdot S_d\), \(y = (t/24 - 0.5) \cdot S_t\)
+            Deterministic 3D mapping: x = d · Sd, y = (t/24 - 0.5) · St
           </div>
         </div>
       </div>
@@ -86,3 +86,5 @@ export const FlowEnvironment: React.FC = () => {
     </div>
   );
 };
+
+export default FlowEnvironment;

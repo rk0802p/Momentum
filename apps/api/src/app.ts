@@ -15,7 +15,21 @@ import { analyticsRouter } from './routes/analytics';
 
 export const app: Express = express();
 
-app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      env.CORS_ORIGIN === '*' ||
+      origin === env.CORS_ORIGIN ||
+      origin.endsWith('.vercel.app') ||
+      origin.includes('localhost')
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(cookieParser());
 

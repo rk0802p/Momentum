@@ -50,3 +50,27 @@ pnpm dev:api
 - `Home`: Return to Today
 - `Ctrl + Z`: Undo last action
 - `Ctrl + Y`: Redo action
+
+---
+
+## Deploy to Vercel
+
+MOMENTUM is pre-configured for zero-friction Vercel deployment with progressive chunk splitting, SPA rewrite rules, and serverless API integration.
+
+### Method 1: Vercel Git Integration (Recommended)
+1. Push your repository to GitHub / GitLab / Bitbucket.
+2. In the [Vercel Dashboard](https://vercel.com/new), select **Add New Project** and import the repository.
+3. The root [`vercel.json`](file:///d:/New%20folder%20(2)/Momentum/vercel.json) automatically configures the project:
+   - **Framework Preset**: Vite
+   - **Build Command**: `pnpm build`
+   - **Output Directory**: `apps/web/dist`
+4. Click **Deploy**. Both the Web App and Serverless API are immediately live with zero configuration.
+
+### Method 2: Vercel CLI
+```bash
+# Install Vercel CLI if needed
+npm i -g vercel
+
+# Deploy directly from repository root
+vercel
+```
