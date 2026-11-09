@@ -53,6 +53,22 @@ pnpm dev:api
 
 ---
 
+## Documentation
+
+Comprehensive product and technical documentation is available in the [`docs/`](file:///d:/New%20folder%20(2)/Momentum/docs) directory:
+
+- [Product Specification](file:///d:/New%20folder%20(2)/Momentum/docs/PRODUCT_SPEC.md) — Complete vision, 5 core principles, and feature specs
+- [System Architecture](file:///d:/New%20folder%20(2)/Momentum/docs/ARCHITECTURE.md) — Monorepo layers, state flow, and data pipelines
+- [Temporal Domain Engine](file:///d:/New%20folder%20(2)/Momentum/docs/TEMPORAL_ENGINE.md) — Half-open interval math and sweep-line collision algorithms
+- [Rendering Engine](file:///d:/New%20folder%20(2)/Momentum/docs/RENDERING_ENGINE.md) — SVG radial dials, Three.js 3D weekly landscape, and generative artwork
+- [API Reference](file:///d:/New%20folder%20(2)/Momentum/docs/API_REFERENCE.md) — REST endpoints, authentication, and error envelopes
+- [Database Schema](file:///d:/New%20folder%20(2)/Momentum/docs/DATABASE_SCHEMA.md) — PostgreSQL Prisma entities and relationships
+- [Interaction Design](file:///d:/New%20folder%20(2)/Momentum/docs/INTERACTION_DESIGN.md) — Direct pointer dragging, polar snapping, and motion curves
+- [Testing Guide](file:///d:/New%20folder%20(2)/Momentum/docs/TESTING.md) — Test suites, invariants TE-01 through TE-15, and coverage
+- [Contributing Guidelines](file:///d:/New%20folder%20(2)/Momentum/docs/CONTRIBUTING.md) — Architectural invariants and pull request workflow
+
+---
+
 ## Deploy to Vercel
 
 MOMENTUM is pre-configured for zero-friction Vercel deployment with progressive chunk splitting, SPA rewrite rules, and serverless API integration.
